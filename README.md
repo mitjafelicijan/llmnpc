@@ -56,3 +56,7 @@ This builds a Docker image and drops you into a shell with the prompt binary and
 ```bash
 make clean
 ```
+
+## Reading material
+
+- https://www.tinyllm.org/

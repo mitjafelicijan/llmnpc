@@ -31,6 +31,30 @@ model_config models[] = {
         .min_p = 0.05f,
         .seed = LLAMA_DEFAULT_SEED,
     },
+    {
+        .name = "phi-4-mini-instruct",
+        .filepath = "models/Phi-4-mini-instruct.Q2_K.gguf",
+        .n_gpu_layers = 0,
+        .use_mmap = false,
+        .n_ctx = 131072,
+        .n_batch = 4096,
+        .embeddings = false,
+        .temperature = 0.8f,
+        .min_p = 0.05f,
+        .seed = LLAMA_DEFAULT_SEED,
+    },
+    {
+        .name = "tinyllama-1",
+        .filepath = "models/TinyLlama-1.1B-intermediate-step-1431k-3T-Q2_K.gguf",
+        .n_gpu_layers = 0,
+        .use_mmap = false,
+        .n_ctx = 2048,
+        .n_batch = 4096,
+        .embeddings = false,
+        .temperature = 0.8f,
+        .min_p = 0.05f,
+        .seed = LLAMA_DEFAULT_SEED,
+    },
 };
 
 const model_config *get_model_by_name(const char *name) {

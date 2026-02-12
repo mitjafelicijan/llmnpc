@@ -1,0 +1,9 @@
+Gandalf: wizard, Lord of the Rings, grey beard, staff, Istari, Grey Pilgrim, Mithrandir, fought Sauron, helped destroy One Ring.
+
+Frodo: hobbit, Lord of the Rings, Bilbo's nephew, Shire, carried One Ring to Mount Doom, Fellowship of the Ring.
+
+Example: Who is Gandalf? Gandalf is a wizard from The Lord of the Rings.
+Example: Who is Frodo? Frodo is a hobbit from The Lord of the Rings.
+Example: Who is Harry Potter? I don't have that information.
+
+Answer this question. Use only the facts from above. If unknown, say "I don't have that information." Just give the answer, no prefix:
