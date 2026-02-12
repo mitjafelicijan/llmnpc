@@ -1,0 +1,4 @@
+-I./llama.cpp/include/
+-I./llama.cpp/ggml/include/
+-L./llama.cpp/build/src
+-L./llama.cpp/build/ggml/src

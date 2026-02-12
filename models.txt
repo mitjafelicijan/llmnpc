@@ -1,0 +1,1 @@
+https://huggingface.co/Felladrin/gguf-flan-t5-small/resolve/main/flan-t5-small.F16.gguf?download=true
