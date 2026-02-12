@@ -19,7 +19,12 @@ could use LLM's.
    make llamacpp
    ```
 
-2. Build the prompt binary:
+2. Download models
+   ```bash
+   make fetchmodels
+   ```
+
+3. Build the prompt binary:
    ```bash
    make prompt
    ```

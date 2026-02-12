@@ -1,2 +1,7 @@
-*.log
+# Build artefacts
 prompt
+models/
+
+# Other files
+.DS_Store
+*.log

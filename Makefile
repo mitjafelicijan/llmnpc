@@ -1,5 +1,5 @@
 MAKEFLAGS += -j4
-MEX_ASSURE="cc docker"
+MEX_ASSURE="cc docker wget"
 
 include makext.mk
 
@@ -20,6 +20,10 @@ llamacpp: .assure # Build llama.cpp libraries
 		cd $(LLAMA_DIR)/build && \
 		cmake ../ -DBUILD_SHARED_LIBS=OFF && \
 		make -j8
+
+fetchmodels: .assure # Fetch GGUF models
+	-mkdir -p models
+	cd models && wget -nc -i ../models.txt
 
 docker: .assure # Runs prompt in Docker container
 	docker build -t promptd .
