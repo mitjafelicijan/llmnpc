@@ -1,9 +1,24 @@
-Gandalf: wizard, Lord of the Rings, grey beard, staff, Istari, Grey Pilgrim, Mithrandir, fought Sauron, helped destroy One Ring.
-
-Frodo: hobbit, Lord of the Rings, Bilbo's nephew, Shire, carried One Ring to Mount Doom, Fellowship of the Ring.
-
-Example: Who is Gandalf? Gandalf is a wizard from The Lord of the Rings.
-Example: Who is Frodo? Frodo is a hobbit from The Lord of the Rings.
-Example: Who is Harry Potter? I don't have that information.
-
-Answer this question. Use only the facts from above. If unknown, say "I don't have that information." Just give the answer, no prefix:
+Gandalf is a wizard in The Lord of the Rings with a grey beard and a staff.
+Gandalf is one of the Istari and is called the Grey Pilgrim and Mithrandir.
+Gandalf fought Sauron and helped destroy the One Ring.
+Frodo Baggins is a hobbit in The Lord of the Rings and is Bilbo's nephew.
+Frodo is from the Shire and carried the One Ring to Mount Doom.
+Frodo is a member of the Fellowship of the Ring.
+Samwise Gamgee is a hobbit from the Shire in The Lord of the Rings.
+Samwise is Frodo's loyal companion and a member of the Fellowship of the Ring.
+Aragorn is a man in The Lord of the Rings and is known as Strider.
+Aragorn is a ranger, a leader of Men, and a member of the Fellowship of the Ring.
+Legolas is an elf in The Lord of the Rings and a skilled archer.
+Legolas is a member of the Fellowship of the Ring.
+Gimli is a dwarf in The Lord of the Rings and a warrior.
+Gimli is a member of the Fellowship of the Ring.
+Boromir is a man from Gondor in The Lord of the Rings.
+Boromir is a member of the Fellowship of the Ring.
+The One Ring is a powerful ring in The Lord of the Rings that was created by Sauron.
+The One Ring corrupts its bearer and must be destroyed in Mount Doom.
+Sauron is the Dark Lord in The Lord of the Rings and created the One Ring.
+Sauron is an enemy of the free peoples of Middle-earth.
+Mordor is the realm of Sauron in The Lord of the Rings and contains Mount Doom.
+Mount Doom is a volcano in Mordor in The Lord of the Rings where the One Ring was destroyed.
+The Shire is the homeland of hobbits in The Lord of the Rings and the home of Frodo and Samwise.
+Gondor is a kingdom of Men in The Lord of the Rings and the home of Boromir.
