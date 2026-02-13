@@ -12,24 +12,27 @@ LDFLAGS = -L$(LLAMA_DIR)/build/src -L$(LLAMA_DIR)/build/ggml/src \
 
 help: .help
 
-prompt: prompt.c vectordb.c models.h # Build prompt binary for testing
+build/prompt: prompt.c vectordb.c models.h # Build prompt binary for testing
 	$(CC) $(CFLAGS) prompt.c vectordb.c -o prompt $(LDFLAGS)
 
-llamacpp: .assure # Build llama.cpp libraries
+build/context: context.c vectordb.c models.h # Build context binary for testing
+	$(CC) $(CFLAGS) context.c vectordb.c -o context $(LDFLAGS)
+
+build/llama.cpp: .assure # Build llama.cpp libraries
 	mkdir $(LLAMA_DIR)/build && \
 		cd $(LLAMA_DIR)/build && \
 		cmake ../ -DBUILD_SHARED_LIBS=OFF && \
 		make -j8
 
-fetchmodels: .assure # Fetch GGUF models
+run/fetch-models: .assure # Fetch GGUF models
 	-mkdir -p models
 	cd models && wget -nc -i ../models.txt
 
-docker: .assure # Runs prompt in Docker container
+run/docker: .assure # Runs prompt in Docker container
 	docker build -t promptd .
 	docker run -it promptd
 
-clean: # Cleans up all the build artefacts
+run/clean: # Cleans up all the build artefacts
 	-rm -f prompt
 	cd $(LLAMA_DIR)/build && make clean
 	-rm -Rf $(LLAMA_DIR)/build

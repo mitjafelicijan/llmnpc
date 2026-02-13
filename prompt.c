@@ -11,6 +11,10 @@
 #define MAX_TOKENS 512
 #define MAX_TOKEN_LEN 32
 
+typedef struct {
+
+} Engine;
+
 static const char *refusal_text = "I don't have that information.";
 
 static void llama_log_callback(enum ggml_log_level level, const char *text, void *user_data) {
@@ -58,7 +62,7 @@ static int collect_tokens(const char *text, char tokens[MAX_TOKENS][MAX_TOKEN_LE
                 buf[len] = '\0';
                 if (len >= 4 && !is_stopword(buf, (size_t)len)) {
                     if (!token_exists(tokens, count, buf) && count < MAX_TOKENS) {
-                        strncpy(tokens[count], buf, MAX_TOKEN_LEN - 1);
+                        memcpy(tokens[count], buf, (size_t)len + 1);
                         tokens[count][MAX_TOKEN_LEN - 1] = '\0';
                         count++;
                     }
@@ -412,12 +416,16 @@ static void show_help(const char *prog) {
     printf("Options:\n");
     printf("  -m, --model <name>    Specify model to use (default: first model)\n");
     printf("  -p, --prompt <text>   Specify prompt text (default: \"What is 2+2?\")\n");
+    printf("  -b, --build <file>    Specify context file\n");
     printf("  -c, --context <text>  Specify context file\n");
     printf("  -v, --verbose         Enable verbose logging\n");
     printf("  -h, --help            Show this help message\n");
 }
 
 int main(int argc, char **argv) {
+	/* Engine engine = {}; */
+
+
     const char *model_name = NULL;
     const char *prompt = NULL;
     const char *context_file = NULL;
@@ -429,6 +437,7 @@ int main(int argc, char **argv) {
         {"model", required_argument, 0, 'm'},
         {"prompt", required_argument, 0, 'p'},
         {"context", required_argument, 0, 'c'},
+        {"build", required_argument, 0, 'b'},
         {"verbose", no_argument, 0, 'v'},
         {"help", no_argument, 0, 'h'},
         {0, 0, 0, 0}

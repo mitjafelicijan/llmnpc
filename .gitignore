@@ -1,7 +1,9 @@
 # Build artefacts
-prompt
 models/
+prompt
+context
 
 # Other files
 .DS_Store
 *.log
+*.vdb

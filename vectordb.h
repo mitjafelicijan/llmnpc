@@ -26,4 +26,7 @@ void vdb_add_document(VectorDB *db, const char *text);
 void vdb_embed_query(VectorDB *db, const char *text, float *out_embedding);
 void vdb_search(VectorDB *db, float *query_embedding, int top_k, int *results);
 
+int vdb_save(const VectorDB *db, const char *path);
+int vdb_load(VectorDB *db, const char *path);
+
 #endif
