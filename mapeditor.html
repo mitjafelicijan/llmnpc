@@ -6,20 +6,13 @@
     <title>ASCII Map Editor</title>
     <style>
       :root {
-        color-scheme: light;
-        --gridline: rgba(0, 0, 0, 0.1);
+        --gridline: rgba(0, 0, 0, 0.15);
         --mono: "SFMono-Regular", Menlo, Consolas, monospace;
-      }
-
-      * {
-        box-sizing: border-box;
       }
 
       body {
         margin: 0;
         font-family: system-ui, sans-serif;
-        background: #f5f5f5;
-        color: #222;
         height: 100vh;
         overflow: hidden;
         display: flex;
@@ -27,100 +20,69 @@
       }
 
       header {
-        padding: 16px 20px 8px;
+        padding: 12px 16px 8px;
       }
 
       header h1 {
-        margin: 0 0 6px;
-        font-size: 1.2rem;
+        margin: 0 0 4px;
+        font-size: 1rem;
       }
 
       header p {
         margin: 0;
-        color: #555;
       }
 
       .layout {
         display: grid;
         grid-template-columns: 280px 1fr;
-        gap: 16px;
-        padding: 0 20px 20px;
+        gap: 12px;
+        padding: 0 16px 16px;
         flex: 1;
         min-height: 0;
       }
 
       .panel,
       .grid-wrap {
-        background: #fff;
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        padding: 12px;
+        border: 1px solid #ccc;
+        padding: 8px;
         overflow: auto;
         min-height: 0;
       }
 
       .panel h2 {
         font-size: 0.9rem;
-        margin: 0 0 10px;
+        margin: 0 0 8px;
       }
 
       .controls {
         display: grid;
-        gap: 12px;
+        gap: 10px;
       }
 
       .control-group {
         display: grid;
         gap: 8px;
-        padding-bottom: 8px;
-        border-bottom: 1px solid #eee;
-      }
-
-      .control-group:last-child {
-        border-bottom: 0;
-        padding-bottom: 0;
       }
 
       .row {
         display: flex;
         align-items: center;
-        justify-content: space-between;
         gap: 8px;
       }
 
       .palette {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
-        gap: 6px;
+        gap: 4px;
       }
 
       .tile-btn {
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        padding: 6px 0;
-        background: #f7f7f7;
+        padding: 4px 0;
         font-family: var(--mono);
-        cursor: pointer;
-      }
-
-      .tile-btn.active {
-        outline: 2px solid #2b7fff;
-        border-color: #2b7fff;
       }
 
       .button {
-        background: #2b7fff;
-        color: #fff;
-        border: none;
-        border-radius: 4px;
-        padding: 6px 10px;
-        cursor: pointer;
-      }
-
-      .button.secondary {
-        background: #fff;
-        color: #222;
-        border: 1px solid #ccc;
+        padding: 4px 8px;
       }
 
       input[type="range"] {
@@ -129,20 +91,15 @@
 
       .stat {
         font-family: var(--mono);
-        color: #2b7fff;
-        font-size: 0.85rem;
       }
 
       #gridCanvas {
         display: block;
-        background: #fff;
-        border: 1px solid #ddd;
         image-rendering: pixelated;
         cursor: crosshair;
       }
 
       .footer-note {
-        color: #666;
         font-size: 0.85rem;
       }
 
@@ -154,10 +111,7 @@
     </style>
   </head>
   <body>
-    <header>
-      <h1>ASCII Map Editor</h1>
-      <p>Paint tiles directly onto the grid. Export keeps the same text layout as your map files.</p>
-    </header>
+    <header></header>
     <div class="layout">
       <aside class="panel">
         <h2>Tools</h2>
@@ -211,11 +165,6 @@
             </div>
             <div class="footer-note" id="status">Loaded maps/map1.txt</div>
           </div>
-          <div class="control-group">
-            <div class="footer-note">
-              Paint: click or drag. Hold Shift for straight lines. Shortcut: 1-4 to pick tile.
-            </div>
-          </div>
         </div>
       </aside>
       <main class="grid-wrap" id="gridWrap">
@@ -240,6 +189,16 @@
         "╝",
         "═",
         "║",
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
         "#",
         ".",
         "~",
@@ -259,6 +218,16 @@
         "S": "Red",
         "G": "Red",
         "$": "Gold",
+        "0": "Cyan",
+        "1": "Cyan",
+        "2": "Cyan",
+        "3": "Cyan",
+        "4": "Cyan",
+        "5": "Cyan",
+        "6": "Cyan",
+        "7": "Cyan",
+        "8": "Cyan",
+        "9": "Cyan",
         " ": "Void",
         "┌": "Border corner",
         "┐": "Border corner",
@@ -321,6 +290,7 @@
         if ("#┌┐└┘─│╔╗╚╝═║".includes(tile)) return "wall";
         if (tile === ".") return "floor";
         if (tile === "~") return "water";
+        if ("0123456789".includes(tile)) return "cyan";
         if (tile === "N") return "cyan";
         if ("BSG".includes(tile)) return "red";
         if (tile === "$") return "gold";
