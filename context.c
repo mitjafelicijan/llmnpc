@@ -16,7 +16,7 @@ static void llama_log_callback(enum ggml_log_level level, const char *text, void
 	(void)text;
 }
 
-void list_available_models() {
+static void list_available_models() {
 	printf("Model list:\n");
 	ModelConfig model;
 	static_foreach(ModelConfig, model, models) {
