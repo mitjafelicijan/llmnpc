@@ -15,17 +15,20 @@ PROMPT_HEADERS := $(PROMPT_TXT:.txt=.h)
 
 help: .help
 
-build/npc: build/prompts npc.c vectordb.c models.h # Build npc binary for testing
-	$(CC) $(CFLAGS) npc.c vectordb.c -o npc $(LDFLAGS)
-
-build/context: context.c vectordb.c models.h # Build context binary for testing
-	$(CC) $(CFLAGS) context.c vectordb.c -o context $(LDFLAGS)
-
 build/llama.cpp: .assure # Build llama.cpp libraries
 	mkdir $(LLAMA_DIR)/build && \
 		cd $(LLAMA_DIR)/build && \
 		cmake ../ -DBUILD_SHARED_LIBS=OFF && \
 		make -j8
+
+build/context: context.c vectordb.c models.h # Build context binary for testing
+	$(CC) $(CFLAGS) context.c vectordb.c -o context $(LDFLAGS)
+
+build/npc: build/prompts npc.c vectordb.c models.h # Build npc binary for testing
+	$(CC) $(CFLAGS) npc.c vectordb.c -o npc $(LDFLAGS)
+
+build/game: build/prompts game.c vectordb.c models.h # Build npc binary for testing
+	$(CC) $(CFLAGS) game.c vectordb.c -o game $(LDFLAGS)
 
 build/prompts: $(PROMPT_HEADERS) # Generate C style header
 

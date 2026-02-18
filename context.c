@@ -155,8 +155,9 @@ int main(int argc, char **argv) {
 		vdb_add_document(&db, line);
 	}
 
-	if (vdb_save(&db, out_file) > 0) {
-		log_message(stderr, LOG_ERROR, "Something went wrong saving file %s", out_file);
+	VectorDBErrorCode vdb_rc = vdb_save(&db, out_file);
+	if (vdb_rc != VDB_SUCCESS) {
+		log_message(stderr, LOG_ERROR, "Something went wrong saving file %s: %s", out_file, vdb_error(vdb_rc));
 		fclose(context_fp);
 		return 1;
 	}

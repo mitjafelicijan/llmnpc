@@ -3,6 +3,7 @@ models/
 prompt
 context
 npc
+game
 
 # Other files
 .DS_Store

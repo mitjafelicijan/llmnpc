@@ -340,9 +340,9 @@ int main(int argc, char **argv) {
 
 	VectorDB db = {};
 	vdb_init(&db, embed_ctx);
-	int vdb_rc = vdb_load(&db, context_file);
-	if (vdb_rc != 0) {
-		log_message(stderr, LOG_ERROR, "Failed to load vector database %s (err %d)", context_file, vdb_rc);
+	VectorDBErrorCode vdb_rc = vdb_load(&db, context_file);
+	if (vdb_rc != VDB_SUCCESS) {
+		log_message(stderr, LOG_ERROR, "Failed to load vector database %s: %s", context_file, vdb_error(vdb_rc));
 		llama_free(embed_ctx);
 		llama_model_free(model);
 		llama_backend_free();
