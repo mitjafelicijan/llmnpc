@@ -226,6 +226,7 @@ static int execute_prompt_with_context(const ModelConfig *cfg, const char *promp
 	free(prompt_tokens);
 	free(system_prefix);
 	free(out);
+
 	llama_sampler_free(smpl);
 	llama_free(ctx);
 	llama_model_free(model);
