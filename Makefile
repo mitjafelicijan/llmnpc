@@ -13,6 +13,9 @@ LDFLAGS = -L$(LLAMA_DIR)/build/src -L$(LLAMA_DIR)/build/ggml/src \
 PROMPT_TXT := $(wildcard prompts/*.txt)
 PROMPT_HEADERS := $(PROMPT_TXT:.txt=.h)
 
+MAP_TXT := $(wildcard maps/*.txt)
+MAP_HEADERS := $(MAP_TXT:.txt=.h)
+
 help: .help
 
 build/llama.cpp: .assure # Build llama.cpp libraries
@@ -27,10 +30,12 @@ build/context: context.c vectordb.c models.h # Build context binary for testing
 build/npc: build/prompts npc.c vectordb.c models.h # Build npc binary for testing
 	$(CC) $(CFLAGS) npc.c vectordb.c -o npc $(LDFLAGS)
 
-build/game: build/prompts game.c vectordb.c models.h # Build npc binary for testing
+build/game: build/prompts build/maps game.c vectordb.c models.h # Build npc binary for testing
 	$(CC) $(CFLAGS) game.c vectordb.c -o game $(LDFLAGS)
 
-build/prompts: $(PROMPT_HEADERS) # Generate C style header
+build/prompts: $(PROMPT_HEADERS) # Generate prompts in C style header
+
+build/maps: $(MAP_HEADERS) # Generate maps in  C style header
 
 run/fetch-models: .assure # Fetch GGUF models
 	-mkdir -p models
@@ -46,4 +51,7 @@ run/clean: # Cleans up all the build artefacts
 	-rm -Rf $(LLAMA_DIR)/build
 
 prompts/%.h: prompts/%.txt .assure
+	xxd -i $< > $@
+
+maps/%.h: maps/%.txt .assure
 	xxd -i $< > $@

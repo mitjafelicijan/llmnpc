@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ASCII Map Editor</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --gridline: rgba(0, 0, 0, 0.1);
+        --mono: "SFMono-Regular", Menlo, Consolas, monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: system-ui, sans-serif;
+        background: #f5f5f5;
+        color: #222;
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      header {
+        padding: 16px 20px 8px;
+      }
+
+      header h1 {
+        margin: 0 0 6px;
+        font-size: 1.2rem;
+      }
+
+      header p {
+        margin: 0;
+        color: #555;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 16px;
+        padding: 0 20px 20px;
+        flex: 1;
+        min-height: 0;
+      }
+
+      .panel,
+      .grid-wrap {
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        padding: 12px;
+        overflow: auto;
+        min-height: 0;
+      }
+
+      .panel h2 {
+        font-size: 0.9rem;
+        margin: 0 0 10px;
+      }
+
+      .controls {
+        display: grid;
+        gap: 12px;
+      }
+
+      .control-group {
+        display: grid;
+        gap: 8px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #eee;
+      }
+
+      .control-group:last-child {
+        border-bottom: 0;
+        padding-bottom: 0;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .palette {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+      }
+
+      .tile-btn {
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 6px 0;
+        background: #f7f7f7;
+        font-family: var(--mono);
+        cursor: pointer;
+      }
+
+      .tile-btn.active {
+        outline: 2px solid #2b7fff;
+        border-color: #2b7fff;
+      }
+
+      .button {
+        background: #2b7fff;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        padding: 6px 10px;
+        cursor: pointer;
+      }
+
+      .button.secondary {
+        background: #fff;
+        color: #222;
+        border: 1px solid #ccc;
+      }
+
+      input[type="range"] {
+        width: 100%;
+      }
+
+      .stat {
+        font-family: var(--mono);
+        color: #2b7fff;
+        font-size: 0.85rem;
+      }
+
+      #gridCanvas {
+        display: block;
+        background: #fff;
+        border: 1px solid #ddd;
+        image-rendering: pixelated;
+        cursor: crosshair;
+      }
+
+      .footer-note {
+        color: #666;
+        font-size: 0.85rem;
+      }
+
+      @media (max-width: 980px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>ASCII Map Editor</h1>
+      <p>Paint tiles directly onto the grid. Export keeps the same text layout as your map files.</p>
+    </header>
+    <div class="layout">
+      <aside class="panel">
+        <h2>Tools</h2>
+        <div class="controls">
+          <div class="control-group">
+            <div class="row">
+              <span>Tile</span>
+              <span class="stat" id="activeTile">#</span>
+            </div>
+            <div class="palette" id="palette"></div>
+          </div>
+          <div class="control-group">
+            <div class="row">
+              <span>Brush</span>
+              <span class="stat" id="brushLabel">1</span>
+            </div>
+            <input type="range" id="brushSize" min="1" max="5" value="1" />
+          </div>
+          <div class="control-group">
+            <div class="row">
+        <span>Grid</span>
+              <span class="stat" id="gridSize">0 x 0</span>
+            </div>
+            <div class="row">
+              <button class="button secondary" id="toggleGrid">Toggle Gridlines</button>
+              <button class="button secondary" id="clearMap">Clear</button>
+            </div>
+            <div class="row">
+              <button class="button secondary" id="addBorder">Add Border</button>
+              <button class="button secondary" id="addDoubleBorder">Add Double Border</button>
+            </div>
+            <div class="row">
+              <label>
+                W
+                <input type="number" id="gridWidth" min="1" value="118" style="width: 64px" />
+              </label>
+              <label>
+                H
+                <input type="number" id="gridHeight" min="1" value="59" style="width: 64px" />
+              </label>
+              <button class="button secondary" id="resizeGrid">Resize</button>
+            </div>
+          </div>
+          <div class="control-group">
+            <div class="row">
+              <button class="button" id="saveMap">Download .txt</button>
+              <button class="button secondary" id="copyMap">Copy</button>
+            </div>
+            <div class="row">
+              <input type="file" id="fileInput" accept=".txt" />
+            </div>
+            <div class="footer-note" id="status">Loaded maps/map1.txt</div>
+          </div>
+          <div class="control-group">
+            <div class="footer-note">
+              Paint: click or drag. Hold Shift for straight lines. Shortcut: 1-4 to pick tile.
+            </div>
+          </div>
+        </div>
+      </aside>
+      <main class="grid-wrap" id="gridWrap">
+        <canvas id="gridCanvas" aria-label="Map grid" role="img"></canvas>
+      </main>
+    </div>
+
+    <script>
+      const storageKey = "mapeditor-state";
+      const defaultCols = 118;
+      const defaultRows = 59;
+      const tileOrder = [
+        "┌",
+        "┐",
+        "└",
+        "┘",
+        "─",
+        "│",
+        "╔",
+        "╗",
+        "╚",
+        "╝",
+        "═",
+        "║",
+        "#",
+        ".",
+        "~",
+        " ",
+        "N",
+        "B",
+        "S",
+        "G",
+        "$",
+      ];
+      const tileLabels = {
+        "#": "Wall",
+        ".": "Floor",
+        "~": "Water",
+        "N": "Cyan",
+        "B": "Red",
+        "S": "Red",
+        "G": "Red",
+        "$": "Gold",
+        " ": "Void",
+        "┌": "Border corner",
+        "┐": "Border corner",
+        "└": "Border corner",
+        "┘": "Border corner",
+        "─": "Border",
+        "│": "Border",
+        "╔": "Double border corner",
+        "╗": "Double border corner",
+        "╚": "Double border corner",
+        "╝": "Double border corner",
+        "═": "Double border",
+        "║": "Double border",
+      };
+
+      const canvas = document.getElementById("gridCanvas");
+      const ctx = canvas.getContext("2d");
+      const gridWrap = document.getElementById("gridWrap");
+      const paletteEl = document.getElementById("palette");
+      const activeTileEl = document.getElementById("activeTile");
+      const brushSizeEl = document.getElementById("brushSize");
+      const brushLabelEl = document.getElementById("brushLabel");
+      const gridSizeEl = document.getElementById("gridSize");
+      const toggleGridBtn = document.getElementById("toggleGrid");
+      const clearBtn = document.getElementById("clearMap");
+      const addBorderBtn = document.getElementById("addBorder");
+      const addDoubleBorderBtn = document.getElementById("addDoubleBorder");
+      const gridWidthEl = document.getElementById("gridWidth");
+      const gridHeightEl = document.getElementById("gridHeight");
+      const resizeGridBtn = document.getElementById("resizeGrid");
+      const saveBtn = document.getElementById("saveMap");
+      const copyBtn = document.getElementById("copyMap");
+      const fileInput = document.getElementById("fileInput");
+      const statusEl = document.getElementById("status");
+
+      let mapData = [];
+      let activeTile = "#";
+      let isPainting = false;
+      let lastCell = null;
+      let showGridLines = true;
+
+      const baseFontSize = 14;
+      const minZoom = 0.5;
+      const maxZoom = 4;
+      let zoom = 1;
+      let cellMetrics = { width: baseFontSize, height: baseFontSize, fontSize: baseFontSize };
+      let devicePixelRatioValue = window.devicePixelRatio || 1;
+      let autoSaveId = null;
+      const tileStyle = {
+        wall: { fill: "#8a6b3e", text: "#251a0b" },
+        floor: { fill: "#f7f7f7", text: "#b9b9b9" },
+        water: { fill: "#4a8fa3", text: "#e9f7f9" },
+        cyan: { fill: "#27c8d1", text: "#07353a" },
+        red: { fill: "#d84545", text: "#3d0a0a" },
+        gold: { fill: "#d7a627", text: "#3a2605" },
+        void: { fill: "#222", text: "#777" },
+      };
+
+      const tileClass = (tile) => {
+        if ("#┌┐└┘─│╔╗╚╝═║".includes(tile)) return "wall";
+        if (tile === ".") return "floor";
+        if (tile === "~") return "water";
+        if (tile === "N") return "cyan";
+        if ("BSG".includes(tile)) return "red";
+        if (tile === "$") return "gold";
+        return "void";
+      };
+
+      const setStatus = (text) => {
+        statusEl.textContent = text;
+      };
+
+      const normalizeMap = (lines) => {
+        const cleanLines = lines.filter((line) => line.length > 0);
+        const width = Math.max(...cleanLines.map((line) => line.length));
+        return cleanLines.map((line) => line.padEnd(width, " ").split(""));
+      };
+
+      const mapToText = () => mapData.map((row) => row.join("")).join("\n");
+
+      const buildCanvas = () => {
+        if (!mapData.length) return;
+        const rows = mapData.length;
+        const cols = mapData[0].length;
+        resizeCanvas(cols, rows);
+        gridSizeEl.textContent = `${cols} x ${rows}`;
+        gridWidthEl.value = cols;
+        gridHeightEl.value = rows;
+        renderAll();
+      };
+
+      const resizeCanvas = (cols, rows) => {
+        const fontSize = Math.max(8, Math.round(baseFontSize * zoom));
+        devicePixelRatioValue = window.devicePixelRatio || 1;
+        ctx.setTransform(devicePixelRatioValue, 0, 0, devicePixelRatioValue, 0, 0);
+        ctx.font = `${fontSize}px ${getComputedStyle(document.documentElement).getPropertyValue("--mono")}`;
+        const metrics = ctx.measureText("M");
+        const glyphWidth = Math.max(1, Math.ceil(metrics.width));
+        const glyphHeight = Math.max(
+          1,
+          Math.ceil((metrics.actualBoundingBoxAscent || fontSize) + (metrics.actualBoundingBoxDescent || 0))
+        );
+        cellMetrics = { width: glyphWidth, height: glyphHeight, fontSize };
+        canvas.style.width = `${cols * cellMetrics.width}px`;
+        canvas.style.height = `${rows * cellMetrics.height}px`;
+        canvas.width = Math.round(cols * cellMetrics.width * devicePixelRatioValue);
+        canvas.height = Math.round(rows * cellMetrics.height * devicePixelRatioValue);
+        ctx.setTransform(devicePixelRatioValue, 0, 0, devicePixelRatioValue, 0, 0);
+        ctx.font = `${fontSize}px ${getComputedStyle(document.documentElement).getPropertyValue("--mono")}`;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+      };
+
+      const drawCell = (x, y, tile) => {
+        const type = tileClass(tile);
+        const style = tileStyle[type];
+        const px = x * cellMetrics.width;
+        const py = y * cellMetrics.height;
+        ctx.fillStyle = style.fill;
+        ctx.fillRect(px, py, cellMetrics.width, cellMetrics.height);
+        if (showGridLines) {
+          ctx.strokeStyle = getComputedStyle(document.documentElement)
+            .getPropertyValue("--gridline")
+            .trim();
+          ctx.strokeRect(
+            px + 0.5,
+            py + 0.5,
+            Math.max(1, cellMetrics.width - 1),
+            Math.max(1, cellMetrics.height - 1)
+          );
+        }
+        if (tile !== " ") {
+          ctx.fillStyle = style.text;
+          ctx.fillText(tile, px, py);
+        }
+      };
+
+      const renderAll = () => {
+        const rows = mapData.length;
+        const cols = mapData[0].length;
+        for (let y = 0; y < rows; y += 1) {
+          for (let x = 0; x < cols; x += 1) {
+            drawCell(x, y, mapData[y][x]);
+          }
+        }
+      };
+
+      const updateCell = (x, y, tile) => {
+        if (!mapData[y] || mapData[y][x] === undefined) return;
+        mapData[y][x] = tile;
+        drawCell(x, y, tile);
+      };
+
+      const paintAt = (x, y) => {
+        const size = Number(brushSizeEl.value);
+        const half = Math.floor(size / 2);
+        for (let dy = -half; dy <= half; dy += 1) {
+          for (let dx = -half; dx <= half; dx += 1) {
+            updateCell(x + dx, y + dy, activeTile);
+          }
+        }
+      };
+
+      const drawLine = (from, to) => {
+        const dx = Math.abs(to.x - from.x);
+        const dy = Math.abs(to.y - from.y);
+        const sx = from.x < to.x ? 1 : -1;
+        const sy = from.y < to.y ? 1 : -1;
+        let err = dx - dy;
+        let x = from.x;
+        let y = from.y;
+        while (true) {
+          paintAt(x, y);
+          if (x === to.x && y === to.y) break;
+          const e2 = err * 2;
+          if (e2 > -dy) {
+            err -= dy;
+            x += sx;
+          }
+          if (e2 < dx) {
+            err += dx;
+            y += sy;
+          }
+        }
+      };
+
+      const setActiveTile = (tile) => {
+        activeTile = tile;
+        activeTileEl.textContent = tile === " " ? "(space)" : tile;
+        paletteEl.querySelectorAll(".tile-btn").forEach((btn) => {
+          btn.classList.toggle("active", btn.dataset.tile === tile);
+        });
+      };
+
+      const setupPalette = () => {
+        paletteEl.innerHTML = "";
+        tileOrder.forEach((tile) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "tile-btn";
+          btn.dataset.tile = tile;
+          btn.textContent = tile === " " ? "space" : tile;
+          btn.title = tileLabels[tile] || tile;
+          btn.addEventListener("click", () => setActiveTile(tile));
+          paletteEl.appendChild(btn);
+        });
+        setActiveTile(activeTile);
+      };
+
+      const loadFromText = (text, sourceLabel) => {
+        const lines = text.replace(/\r/g, "").split("\n");
+        mapData = normalizeMap(lines);
+        buildCanvas();
+        setStatus(`Loaded ${sourceLabel}`);
+      };
+
+      const loadDefaultMap = () => {
+        const row = ".".repeat(defaultCols);
+        const empty = Array.from({ length: defaultRows }, () => row).join("\n");
+        loadFromText(empty, "empty map");
+      };
+
+      const saveState = () => {
+        if (!mapData.length) return;
+        const state = {
+          map: mapToText(),
+          cols: mapData[0].length,
+          rows: mapData.length,
+          zoom,
+          brush: Number(brushSizeEl.value),
+          tile: activeTile,
+          grid: showGridLines,
+        };
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(state));
+          setStatus("Autosaved");
+        } catch (error) {
+          setStatus("Autosave failed");
+        }
+      };
+
+      const loadState = () => {
+        try {
+          const raw = localStorage.getItem(storageKey);
+          if (!raw) return false;
+          const state = JSON.parse(raw);
+          if (!state?.map) return false;
+          loadFromText(state.map, "local autosave");
+          if (state.zoom) applyZoom(state.zoom);
+          if (state.brush) {
+            brushSizeEl.value = state.brush;
+            brushLabelEl.textContent = state.brush;
+          }
+          if (state.tile) setActiveTile(state.tile);
+          if (typeof state.grid === "boolean") showGridLines = state.grid;
+          renderAll();
+          return true;
+        } catch (error) {
+          return false;
+        }
+      };
+
+      brushSizeEl.addEventListener("input", () => {
+        brushLabelEl.textContent = brushSizeEl.value;
+      });
+
+      toggleGridBtn.addEventListener("click", () => {
+        showGridLines = !showGridLines;
+        renderAll();
+      });
+
+      clearBtn.addEventListener("click", () => {
+        mapData = mapData.map((row) => row.map(() => "."));
+        buildCanvas();
+        setStatus("Cleared to floor tiles");
+      });
+
+      resizeGridBtn.addEventListener("click", () => {
+        const newCols = Math.max(1, Number(gridWidthEl.value) || 1);
+        const newRows = Math.max(1, Number(gridHeightEl.value) || 1);
+        const oldRows = mapData.length;
+        const oldCols = mapData[0]?.length || 0;
+        const resized = [];
+        for (let y = 0; y < newRows; y += 1) {
+          const row = [];
+          for (let x = 0; x < newCols; x += 1) {
+            const tile = mapData[y]?.[x] ?? ".";
+            row.push(tile);
+          }
+          resized.push(row);
+        }
+        mapData = resized;
+        buildCanvas();
+        setStatus(`Resized from ${oldCols}x${oldRows} to ${newCols}x${newRows}`);
+      });
+
+      addBorderBtn.addEventListener("click", () => {
+        if (!mapData.length) return;
+        const rows = mapData.length;
+        const cols = mapData[0].length;
+        if (cols < 2 || rows < 2) return;
+        updateCell(0, 0, "┌");
+        updateCell(cols - 1, 0, "┐");
+        updateCell(0, rows - 1, "└");
+        updateCell(cols - 1, rows - 1, "┘");
+        for (let x = 1; x < cols - 1; x += 1) {
+          updateCell(x, 0, "─");
+          updateCell(x, rows - 1, "─");
+        }
+        for (let y = 1; y < rows - 1; y += 1) {
+          updateCell(0, y, "│");
+          updateCell(cols - 1, y, "│");
+        }
+        setStatus("Added box border tiles");
+      });
+
+      addDoubleBorderBtn.addEventListener("click", () => {
+        if (!mapData.length) return;
+        const rows = mapData.length;
+        const cols = mapData[0].length;
+        if (cols < 2 || rows < 2) return;
+        updateCell(0, 0, "╔");
+        updateCell(cols - 1, 0, "╗");
+        updateCell(0, rows - 1, "╚");
+        updateCell(cols - 1, rows - 1, "╝");
+        for (let x = 1; x < cols - 1; x += 1) {
+          updateCell(x, 0, "═");
+          updateCell(x, rows - 1, "═");
+        }
+        for (let y = 1; y < rows - 1; y += 1) {
+          updateCell(0, y, "║");
+          updateCell(cols - 1, y, "║");
+        }
+        setStatus("Added double border tiles");
+      });
+
+      saveBtn.addEventListener("click", () => {
+        const blob = new Blob([mapToText()], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "map.txt";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        setStatus("Downloaded map.txt");
+      });
+
+      copyBtn.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(mapToText());
+          setStatus("Copied map to clipboard");
+        } catch (error) {
+          setStatus("Clipboard unavailable");
+        }
+      });
+
+      fileInput.addEventListener("change", async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        const text = await file.text();
+        loadFromText(text, file.name);
+      });
+
+      canvas.addEventListener("contextmenu", (event) => {
+        event.preventDefault();
+      });
+
+      const getCellFromEvent = (event) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = Math.floor((event.clientX - rect.left) / cellMetrics.width);
+        const y = Math.floor((event.clientY - rect.top) / cellMetrics.height);
+        if (x < 0 || y < 0) return null;
+        if (!mapData.length) return null;
+        if (y >= mapData.length || x >= mapData[0].length) return null;
+        return { x, y };
+      };
+
+      const applyZoom = (newZoom, anchor) => {
+        const rows = mapData.length;
+        const cols = mapData[0]?.length || 0;
+        if (!rows || !cols) return;
+        const clamped = Math.min(maxZoom, Math.max(minZoom, newZoom));
+        if (clamped === zoom) return;
+        const sizeBeforeX = cellMetrics.width;
+        const sizeBeforeY = cellMetrics.height;
+        const offsetX = anchor?.x ?? gridWrap.clientWidth / 2;
+        const offsetY = anchor?.y ?? gridWrap.clientHeight / 2;
+        const worldX = (gridWrap.scrollLeft + offsetX) / sizeBeforeX;
+        const worldY = (gridWrap.scrollTop + offsetY) / sizeBeforeY;
+        zoom = clamped;
+        resizeCanvas(cols, rows);
+        renderAll();
+        gridWrap.scrollLeft = worldX * cellMetrics.width - offsetX;
+        gridWrap.scrollTop = worldY * cellMetrics.height - offsetY;
+      };
+
+      const handleCanvasEvent = (event, overrideTile = null) => {
+        const cell = getCellFromEvent(event);
+        if (!cell) return;
+        const previousTile = activeTile;
+        if (overrideTile !== null) activeTile = overrideTile;
+        if (event.shiftKey && lastCell) {
+          drawLine(lastCell, cell);
+        } else {
+          paintAt(cell.x, cell.y);
+        }
+        if (overrideTile !== null) activeTile = previousTile;
+        lastCell = cell;
+      };
+
+      canvas.addEventListener("mousedown", (event) => {
+        if (event.button === 2) {
+          isPainting = true;
+          handleCanvasEvent(event, ".");
+          return;
+        }
+        isPainting = true;
+        handleCanvasEvent(event);
+      });
+
+      canvas.addEventListener("mousemove", (event) => {
+        if (!isPainting) return;
+        if (event.buttons === 2) {
+          handleCanvasEvent(event, ".");
+          return;
+        }
+        handleCanvasEvent(event);
+      });
+
+      canvas.addEventListener("wheel", (event) => {
+        event.preventDefault();
+        const delta = event.deltaY > 0 ? -0.1 : 0.1;
+        const rect = canvas.getBoundingClientRect();
+        const anchor = {
+          x: event.clientX - rect.left,
+          y: event.clientY - rect.top,
+        };
+        applyZoom(zoom + delta, anchor);
+      });
+
+      document.addEventListener("mouseup", () => {
+        isPainting = false;
+        lastCell = null;
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.target.matches("input, textarea")) return;
+        if (event.key >= "1" && event.key <= "4") {
+          const tile = tileOrder[Number(event.key) - 1];
+          setActiveTile(tile);
+        }
+      });
+
+      setupPalette();
+      if (!loadState()) loadDefaultMap();
+      autoSaveId = setInterval(saveState, 5000);
+    </script>
+  </body>
+</html>
