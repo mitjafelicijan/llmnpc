@@ -1,5 +1,11 @@
 An experiment using tiny LLMs as NPCs that could be embedded into the game.
 
+> [!NOTE]
+> This project is just for fun, to see how LLMs would fare as NPCs. Because of
+> the non-deterministic nature of LLMs, the results vary and are often quite
+> funny. A lot of tweaking would be needed to make this really useful in real
+> games, but not impossible.
+
 Goals of the experiment:
 
 - Have LLM be run only on CPU, this is why small LLMs have been chosen in this
@@ -7,12 +13,6 @@ Goals of the experiment:
 - To produce a simple C library that can be reused elsewhere.
 - Test existing small and tiny LLMs and provide some useful results on how they
   behave.
-
-> [!NOTE]
-> This project is just for fun, to see how LLMs would fare as NPCs. Because of
-> the non-deterministic nature of LLMs, the results vary and are often quite
-> funny. A lot of tweaking would be needed to make this really useful in real
-> games, but not impossible.
 
 ## Building
 
