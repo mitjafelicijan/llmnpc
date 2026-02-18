@@ -11,7 +11,7 @@
 #include <string.h>
 #include <getopt.h>
 
-#include "system_prompt.h"
+#include "prompts/lotr.h"
 
 static void llama_log_callback(enum ggml_log_level level, const char *text, void *user_data) {
 	(void)level;
@@ -54,13 +54,13 @@ static int execute_prompt_with_context(const ModelConfig *cfg, const char *promp
 		return 1;
 	}
 
-	char *system_prefix = (char *)malloc(system_prompt_txt_len + 1);
+	char *system_prefix = (char *)malloc(prompts_lotr_txt_len + 1);
 	if (system_prefix == NULL) {
 		log_message(stderr, LOG_ERROR, "Failed to allocate system prompt");
 		return 1;
 	}
-	memcpy(system_prefix, system_prompt_txt, system_prompt_txt_len);
-	system_prefix[system_prompt_txt_len] = '\0';
+	memcpy(system_prefix, prompts_lotr_txt, prompts_lotr_txt_len);
+	system_prefix[prompts_lotr_txt_len] = '\0';
 
 	ggml_backend_load_all();
 

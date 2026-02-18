@@ -1,7 +1,18 @@
-# llmnpc
+An experiment using tiny LLMs as NPCs that could be embedded into the game.
 
-Command-line tooling for NPC-focused LLM experiments with lightweight context
-retrieval, powered by [llama.cpp](https://github.com/ggerganov/llama.cpp).
+Goals of the experiment:
+
+- Have LLM be run only on CPU, this is why small LLMs have been chosen in this
+  experiment, so they can be used in other games.
+- To produce a simple C library that can be reused elsewhere.
+- Test existing small and tiny LLMs and provide some useful results on how they
+  behave.
+
+> [!NOTE]
+> This project is just for fun, to see how LLMs would fare as NPCs. Because of
+> the non-deterministic nature of LLMs, the results vary and are often quite
+> funny. A lot of tweaking would be needed to make this really useful in real
+> games, but not impossible.
 
 ## Building
 
@@ -26,6 +37,7 @@ retrieval, powered by [llama.cpp](https://github.com/ggerganov/llama.cpp).
 3. Build binaries:
    ```bash
    make build/context
+   make build/prompts
    make build/npc
    ```
 
@@ -37,8 +49,8 @@ retrieval, powered by [llama.cpp](https://github.com/ggerganov/llama.cpp).
 produces a binary vector database file.
 
 ```bash
-./context -i context.txt -o context.vdb
-./context -m flan-t5-small -i context.txt -o context.vdb
+./context -i corpus/lotr.txt -o corpus/lotr.vdb
+./context -m flan-t5-small -i corpus/lotr.txt -o corpus/lotr.vdb
 ```
 
 ### Run an NPC query with retrieved context
@@ -47,8 +59,8 @@ produces a binary vector database file.
 lines by cosine similarity, and runs the NPC system prompt against that context.
 
 ```bash
-./npc -m flan-t5-small -p "Who is Gandalf?" -c context.vdb
-./npc -m flan-t5-small -p "Who is Frodo?" -c context.vdb
+./npc -m flan-t5-small -p "Who is Gandalf?" -c corpus/lotr.vdb
+./npc -m flan-t5-small -p "Who is Frodo?" -c corpus/lotr.vdb
 ```
 
 ### context options
