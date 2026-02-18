@@ -152,8 +152,8 @@ static int execute_prompt_with_context(const ModelConfig *cfg, const char *promp
 		batch = llama_batch_get_one(&decoder_start, 1);
 	}
 
-	printf("------------ Prompt: %s\n", prompt);
-	printf("------------ Response: ");
+	printf(">> Prompt: %s\n", prompt);
+	printf(">> Response: ");
 	fflush(stdout);
 
 	int n_pos = 0;

@@ -10,9 +10,6 @@
 #include <string.h>
 #include <getopt.h>
 
-#define MAX_TOKENS 512
-#define MAX_TOKEN_LEN 32
-
 static void llama_log_callback(enum ggml_log_level level, const char *text, void *user_data) {
 	(void)level;
 	(void)user_data;
