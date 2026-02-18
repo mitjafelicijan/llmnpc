@@ -1,5 +1,5 @@
 MAKEFLAGS += -j4
-MEX_ASSURE="cc docker wget"
+MEX_ASSURE="cc docker wget xxd"
 
 include makext.mk
 
@@ -12,8 +12,8 @@ LDFLAGS = -L$(LLAMA_DIR)/build/src -L$(LLAMA_DIR)/build/ggml/src \
 
 help: .help
 
-build/prompt: prompt.c vectordb.c models.h # Build prompt binary for testing
-	$(CC) $(CFLAGS) prompt.c vectordb.c -o prompt $(LDFLAGS)
+build/npc: run/system-prompt npc.c vectordb.c models.h # Build npc binary for testing
+	$(CC) $(CFLAGS) npc.c vectordb.c -o npc $(LDFLAGS)
 
 build/context: context.c vectordb.c models.h # Build context binary for testing
 	$(CC) $(CFLAGS) context.c vectordb.c -o context $(LDFLAGS)
@@ -28,11 +28,14 @@ run/fetch-models: .assure # Fetch GGUF models
 	-mkdir -p models
 	cd models && wget -nc -i ../models.txt
 
-run/docker: .assure # Runs prompt in Docker container
-	docker build -t promptd .
-	docker run -it promptd
+run/docker: .assure # Runs npc in Docker container
+	docker build -t npcd .
+	docker run -it npcd
+
+run/system-prompt: .assure # Generate C style header
+	xxd -i system_prompt.txt > system_prompt.h
 
 run/clean: # Cleans up all the build artefacts
-	-rm -f prompt
+	-rm -f npc
 	cd $(LLAMA_DIR)/build && make clean
 	-rm -Rf $(LLAMA_DIR)/build

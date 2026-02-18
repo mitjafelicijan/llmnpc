@@ -2,6 +2,7 @@
 models/
 prompt
 context
+npc
 
 # Other files
 .DS_Store
