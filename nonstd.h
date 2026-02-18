@@ -334,8 +334,6 @@ NONSTD_DEF void log_message(FILE *stream, LogLevel level, const char *format, ..
 #define COLOR_WARNING "\033[33m"
 #define COLOR_ERROR "\033[31m"
 
-#endif // NONSTD_H
-
 #ifdef NONSTD_IMPLEMENTATION
 
 NONSTD_DEF void *safe_malloc(size_t item_size, size_t count) {
@@ -806,6 +804,8 @@ NONSTD_DEF void ppm_draw_triangle(Canvas *canvas, i32 x0, i32 y0, i32 x1, i32 y1
 }
 
 #endif // NONSTD_IMPLEMENTATION
+
+#endif // NONSTD_H
 
 /*
 BSD 2-Clause License

@@ -6,7 +6,7 @@
 #define NONSTD_IMPLEMENTATION
 #include "nonstd.h"
 
-#include "maps/map1.h"
+#include "maps.h"
 
 #define MIN_W 40
 #define MIN_H 12
@@ -49,13 +49,21 @@ typedef struct {
 	Inventory inventory;
 } Player;
 
+#define DIALOG_HISTORY_MAX 16
+
 typedef struct {
-	const unsigned char *data;
-	int len;
-	int width;
-	int height;
-	u32 *cells;
-} Map;
+	char prompt[128];
+	char response[256];
+} DialogEntry;
+
+typedef struct {
+	int open;
+	char input[128];
+	int input_len;
+	int npc_index;
+	DialogEntry entries[DIALOG_HISTORY_MAX];
+	int entry_count;
+} Dialog;
 
 static int clamp(int value, int min, int max);
 
@@ -78,9 +86,24 @@ static void draw_border(int x, int y, int w, int h, uintattr_t fg) {
 	tb_set_cell(x + w - 1, y + h - 1, CP_BR, fg, TB_DEFAULT);
 }
 
-static void draw_room(int x, int y, int w, int h, uintattr_t fg) {
-	draw_border(x, y, w, h, fg);
-	tb_set_cell(x + w / 2, y, '+', fg, TB_DEFAULT);
+static void draw_border_bg(int x, int y, int w, int h, uintattr_t fg,
+	uintattr_t bg) {
+	int ix;
+	int iy;
+
+	for (ix = 0; ix < w; ix++) {
+		tb_set_cell(x + ix, y, CP_H, fg, bg);
+		tb_set_cell(x + ix, y + h - 1, CP_H, fg, bg);
+	}
+	for (iy = 0; iy < h; iy++) {
+		tb_set_cell(x, y + iy, CP_V, fg, bg);
+		tb_set_cell(x + w - 1, y + iy, CP_V, fg, bg);
+	}
+
+	tb_set_cell(x, y, CP_TL, fg, bg);
+	tb_set_cell(x + w - 1, y, CP_TR, fg, bg);
+	tb_set_cell(x, y + h - 1, CP_BL, fg, bg);
+	tb_set_cell(x + w - 1, y + h - 1, CP_BR, fg, bg);
 }
 
 static void get_layout(int w, int h, int *map_x, int *map_y, int *map_w,
@@ -187,7 +210,15 @@ static void map_set(Map *map, int x, int y, u32 ch) {
 
 static int map_is_walkable(const Map *map, int x, int y) {
 	u32 ch = map_get(map, x, y);
-	return ch == MAP_FLOOR_CH || ch == '$';
+	return ch == MAP_FLOOR_CH || ch == '$' || ch == 'N'
+		|| (ch >= '0' && ch <= '9');
+}
+
+static int npc_index_from_tile(u32 ch) {
+	if (ch >= '0' && ch <= '9') {
+		return (int)(ch - '0');
+	}
+	return -1;
 }
 
 static void map_free(Map *map) {
@@ -245,6 +276,7 @@ static void draw_map(const Map *map, int map_x, int map_y, int view_w,
 			int mx = cam_x + ix;
 			int my = cam_y + iy;
 			u32 ch = map_get(map, mx, my);
+			u32 draw_ch = (ch >= '0' && ch <= '9') ? 'N' : ch;
 			uintattr_t fg = COLOR_WHITE_256;
 			if (ch == MAP_FLOOR_CH) {
 				fg = MAP_FLOOR_FG;
@@ -254,12 +286,12 @@ static void draw_map(const Map *map, int map_x, int map_y, int view_w,
 				fg = COLOR_ORANGE_256;
 			} else if (ch == 'B' || ch == 'S' || ch == 'G') {
 				fg = COLOR_RED_256;
-			} else if (ch == 'N') {
+			} else if (ch == 'N' || (ch >= '0' && ch <= '9')) {
 				fg = COLOR_CYAN_256;
 			} else if (ch >= MAP_BORDER_MIN && ch <= MAP_BORDER_MAX) {
 				fg = COLOR_BORDER_256;
 			}
-			tb_set_cell(map_x + ix, map_y + iy, ch, fg, TB_DEFAULT);
+			tb_set_cell(map_x + ix, map_y + iy, draw_ch, fg, TB_DEFAULT);
 		}
 	}
 
@@ -357,8 +389,97 @@ static void update_status(const char *message) {
 	status_msg = message ? message : "";
 }
 
+static void copy_truncated(char *dst, size_t dst_size, const char *src, int max_chars) {
+	int i = 0;
+	if (dst_size == 0) {
+		return;
+	}
+	if (max_chars < 0) {
+		max_chars = 0;
+	}
+	while (i < max_chars && src[i] != '\0' && i < (int)dst_size - 1) {
+		dst[i] = src[i];
+		i++;
+	}
+	dst[i] = '\0';
+}
+
+static void dialog_open(Dialog *dialog, int npc_index) {
+	dialog->open = 1;
+	dialog->input_len = 0;
+	dialog->input[0] = '\0';
+	dialog->npc_index = npc_index;
+}
+
+static void dialog_close(Dialog *dialog) {
+	dialog->open = 0;
+	dialog->npc_index = -1;
+}
+
+static void dialog_append(Dialog *dialog, uint32_t ch) {
+	if (ch < 32 || ch > 126) {
+		return;
+	}
+	if (dialog->input_len >= (int)(sizeof(dialog->input) - 1)) {
+		return;
+	}
+	dialog->input[dialog->input_len++] = (char)ch;
+	dialog->input[dialog->input_len] = '\0';
+}
+
+static void dialog_backspace(Dialog *dialog) {
+	if (dialog->input_len <= 0) {
+		return;
+	}
+	dialog->input_len--;
+	dialog->input[dialog->input_len] = '\0';
+}
+
+static void dialog_submit(Dialog *dialog, const GameMap *game_map) {
+	if (dialog->input_len == 0) {
+		return;
+	}
+	{
+		const char *demo = "Demo reply: The old ruins are north of here.";
+		const char *reply = demo;
+		if (game_map && dialog->npc_index >= 0 && dialog->npc_index < 10) {
+			const char *npc_reply = game_map->npcs[dialog->npc_index].reply;
+			if (npc_reply && npc_reply[0] != '\0') {
+				reply = npc_reply;
+			}
+		}
+		if (dialog->entry_count >= DIALOG_HISTORY_MAX) {
+			for (int i = 1; i < DIALOG_HISTORY_MAX; i++) {
+				dialog->entries[i - 1] = dialog->entries[i];
+			}
+			dialog->entry_count = DIALOG_HISTORY_MAX - 1;
+		}
+		snprintf(dialog->entries[dialog->entry_count].prompt,
+			sizeof(dialog->entries[dialog->entry_count].prompt), "%s", dialog->input);
+		snprintf(dialog->entries[dialog->entry_count].response,
+			sizeof(dialog->entries[dialog->entry_count].response), "%s", reply);
+		dialog->entry_count++;
+	}
+	dialog->input_len = 0;
+	dialog->input[0] = '\0';
+}
+
+static void update_npc_status(const GameMap *game_map, int npc_index) {
+	static char status_buf[128];
+	const char *name = NULL;
+	if (game_map && npc_index >= 0 && npc_index < 10) {
+		name = game_map->npcs[npc_index].name;
+	}
+	if (name && name[0] != '\0') {
+		snprintf(status_buf, sizeof(status_buf), "You approach %s.", name);
+	} else {
+		snprintf(status_buf, sizeof(status_buf), "You approach the NPC.");
+	}
+	update_status(status_buf);
+}
+
 static void render(const Map *map, const Player *player, int *cam_x,
-	int *cam_y, int *out_view_w, int *out_view_h) {
+	int *cam_y, int *out_view_w, int *out_view_h, const Dialog *dialog) {
 	int w;
 	int h;
 	int map_x;
@@ -436,6 +557,75 @@ static void render(const Map *map, const Player *player, int *cam_x,
 	tb_print(2, msg1_y, COLOR_GREEN_256, TB_DEFAULT, status_msg);
 	tb_print(2, msg2_y, COLOR_WHITE_256, TB_DEFAULT, "Move: arrows  Quit: q/ESC");
 
+	if (dialog->open) {
+		int box_w = map_w - 4;
+		int box_h = 12;
+		int box_x = map_x + 2;
+		int box_y = map_y + map_h - box_h - 1;
+		if (box_w > w - 2) {
+			box_w = w - 2;
+			box_x = 1;
+		}
+		if (box_h > h - 2) {
+			box_h = h - 2;
+			box_y = 1;
+		}
+		if (box_w < 20) {
+			box_w = 20;
+			box_x = map_x + 1;
+		}
+		if (box_y < map_y + 1) {
+			box_y = map_y + 1;
+		}
+		for (int iy = 0; iy < box_h; iy++) {
+			for (int ix = 0; ix < box_w; ix++) {
+				tb_set_cell(box_x + ix, box_y + iy, ' ', COLOR_WHITE_256, 19);
+			}
+		}
+		draw_border_bg(box_x, box_y, box_w, box_h, COLOR_WHITE_256, 19);
+		{
+			int input_y = box_y + box_h - 3;
+			int footer_y = box_y + box_h - 2;
+			int log_y = box_y + 1;
+			int max_lines = input_y - log_y;
+			int max_text = box_w - 4 - 5;
+			int line = 0;
+
+			if (max_text < 0) {
+				max_text = 0;
+			}
+			int max_entries = max_lines / 2;
+			int start = dialog->entry_count - max_entries;
+			if (start < 0) {
+				start = 0;
+			}
+			for (int i = start; i < dialog->entry_count && line + 1 <= max_lines; i++) {
+				char prompt_buf[128];
+				char response_buf[256];
+				copy_truncated(prompt_buf, sizeof(prompt_buf), dialog->entries[i].prompt, max_text);
+				copy_truncated(response_buf, sizeof(response_buf), dialog->entries[i].response, max_text);
+				if (line < max_lines) {
+				tb_printf(box_x + 2, log_y + line, COLOR_WHITE_256, 19, "You: %s", prompt_buf);
+					line++;
+				}
+				if (line < max_lines) {
+					tb_printf(box_x + 2, log_y + line, COLOR_GREEN_256, 19, "NPC: %s", response_buf);
+					line++;
+				}
+			}
+
+			tb_printf(box_x + 2, input_y, COLOR_WHITE_256, 19, "Say: %s", dialog->input);
+			{
+				int cursor_x = box_x + 2 + 5 + dialog->input_len;
+				int cursor_y = input_y;
+				if (cursor_x < box_x + box_w - 1) {
+					tb_set_cell(cursor_x, cursor_y, '_', COLOR_WHITE_256 | TB_BOLD, 19);
+				}
+			}
+			tb_print(box_x + 2, footer_y, COLOR_WHITE_256, 19, "Enter: send  ESC: close");
+		}
+	}
+
 	tb_present();
 	*out_view_w = view_w;
 	*out_view_h = view_h;
@@ -453,15 +643,22 @@ static int clamp(int value, int min, int max) {
 
 int main(void) {
 	Player player = {0};
-	Map map = {0};
+	array(GameMap) maps;
+	GameMap map1 = {0};
+	GameMap *current_map = NULL;
 	int running = 1;
 	int view_w = 0;
 	int view_h = 0;
 	int cam_x = 0;
 	int cam_y = 0;
+	Dialog dialog = {0};
 
 	player_init(&player);
-	map_init(&map, maps_map1_txt, (int)maps_map1_txt_len);
+	array_init(maps);
+	map1 = make_map1();
+	array_push(maps, map1);
+	current_map = &maps.data[0];
+	map_init(&current_map->map, current_map->data, current_map->len);
 
 	if (tb_init() != TB_OK) {
 		fprintf(stderr, "Failed to init termbox.\n");
@@ -474,47 +671,82 @@ int main(void) {
 	while (running) {
 		struct tb_event ev;
 
-		render(&map, &player, &cam_x, &cam_y, &view_w, &view_h);
+		render(&current_map->map, &player, &cam_x, &cam_y, &view_w, &view_h, &dialog);
 		tb_poll_event(&ev);
 		if (ev.type == TB_EVENT_KEY) {
-			if (ev.key == TB_KEY_ESC || ev.ch == 'q') {
-				running = 0;
-			} else if (ev.key == TB_KEY_ARROW_UP) {
-				int next_y = player.y - 1;
-				if (map_is_walkable(&map, player.x, next_y)) {
-					player.y = next_y;
+			if (dialog.open) {
+				if (ev.key == TB_KEY_ESC) {
+					dialog_close(&dialog);
+				} else if (ev.key == TB_KEY_ENTER) {
+					dialog_submit(&dialog, current_map);
+				} else if (ev.key == TB_KEY_BACKSPACE || ev.key == TB_KEY_BACKSPACE2) {
+					dialog_backspace(&dialog);
+				} else if (ev.ch) {
+					dialog_append(&dialog, ev.ch);
 				}
-			} else if (ev.key == TB_KEY_ARROW_DOWN) {
-				int next_y = player.y + 1;
-				if (map_is_walkable(&map, player.x, next_y)) {
-					player.y = next_y;
+			} else {
+				if (ev.key == TB_KEY_ESC || ev.ch == 'q') {
+					running = 0;
+				} else if (ev.key == TB_KEY_ARROW_UP) {
+					int next_y = player.y - 1;
+					u32 target = map_get(&current_map->map, player.x, next_y);
+					int npc_index = npc_index_from_tile(target);
+					if (target == 'N' || npc_index >= 0) {
+						dialog_open(&dialog, npc_index);
+						update_npc_status(current_map, npc_index);
+					} else if (map_is_walkable(&current_map->map, player.x, next_y)) {
+						player.y = next_y;
+					}
+				} else if (ev.key == TB_KEY_ARROW_DOWN) {
+					int next_y = player.y + 1;
+					u32 target = map_get(&current_map->map, player.x, next_y);
+					int npc_index = npc_index_from_tile(target);
+					if (target == 'N' || npc_index >= 0) {
+						dialog_open(&dialog, npc_index);
+						update_npc_status(current_map, npc_index);
+					} else if (map_is_walkable(&current_map->map, player.x, next_y)) {
+						player.y = next_y;
+					}
+				} else if (ev.key == TB_KEY_ARROW_LEFT) {
+					int next_x = player.x - 1;
+					u32 target = map_get(&current_map->map, next_x, player.y);
+					int npc_index = npc_index_from_tile(target);
+					if (target == 'N' || npc_index >= 0) {
+						dialog_open(&dialog, npc_index);
+						update_npc_status(current_map, npc_index);
+					} else if (map_is_walkable(&current_map->map, next_x, player.y)) {
+						player.x = next_x;
+					}
+				} else if (ev.key == TB_KEY_ARROW_RIGHT) {
+					int next_x = player.x + 1;
+					u32 target = map_get(&current_map->map, next_x, player.y);
+					int npc_index = npc_index_from_tile(target);
+					if (target == 'N' || npc_index >= 0) {
+						dialog_open(&dialog, npc_index);
+						update_npc_status(current_map, npc_index);
+					} else if (map_is_walkable(&current_map->map, next_x, player.y)) {
+						player.x = next_x;
+					}
 				}
-			} else if (ev.key == TB_KEY_ARROW_LEFT) {
-				int next_x = player.x - 1;
-				if (map_is_walkable(&map, next_x, player.y)) {
-					player.x = next_x;
-				}
-			} else if (ev.key == TB_KEY_ARROW_RIGHT) {
-				int next_x = player.x + 1;
-				if (map_is_walkable(&map, next_x, player.y)) {
-					player.x = next_x;
+				if (map_get(&current_map->map, player.x, player.y) == '$') {
+					player.gold += 10;
+					map_set(&current_map->map, player.x, player.y, MAP_FLOOR_CH);
+					update_status("You pick up 10 gold.");
 				}
 			}
-			if (map_get(&map, player.x, player.y) == '$') {
-				player.gold += 10;
-				map_set(&map, player.x, player.y, MAP_FLOOR_CH);
-				update_status("You pick up 10 gold.");
-			}
-			player.x = clamp(player.x, 0, map.width > 1 ? map.width - 1 : 0);
-			player.y = clamp(player.y, 0, map.height > 1 ? map.height - 1 : 0);
+			player.x = clamp(player.x, 0, current_map->map.width > 1 ? current_map->map.width - 1 : 0);
+			player.y = clamp(player.y, 0, current_map->map.height > 1 ? current_map->map.height - 1 : 0);
 		} else if (ev.type == TB_EVENT_RESIZE) {
-			player.x = clamp(player.x, 0, map.width > 1 ? map.width - 1 : 0);
-			player.y = clamp(player.y, 0, map.height > 1 ? map.height - 1 : 0);
+			player.x = clamp(player.x, 0, current_map->map.width > 1 ? current_map->map.width - 1 : 0);
+			player.y = clamp(player.y, 0, current_map->map.height > 1 ? current_map->map.height - 1 : 0);
 		}
 	}
 
 	player_free(&player);
-	map_free(&map);
+	for (size_t i = 0; i < maps.length; i++) {
+		map_free(&maps.data[i].map);
+	}
+	array_free(maps);
 	tb_shutdown();
 	return 0;
 }

@@ -16,6 +16,9 @@ PROMPT_HEADERS := $(PROMPT_TXT:.txt=.h)
 MAP_TXT := $(wildcard maps/*.txt)
 MAP_HEADERS := $(MAP_TXT:.txt=.h)
 
+CORPUS_TXT := $(wildcard corpus/*.txt)
+CORPUS_VDB := $(CORPUS_TXT:.txt=.vdb)
+
 help: .help
 
 build/llama.cpp: .assure # Build llama.cpp libraries
@@ -37,6 +40,8 @@ build/prompts: $(PROMPT_HEADERS) # Generate prompts in C style header
 
 build/maps: $(MAP_HEADERS) # Generate maps in  C style header
 
+build/corpus: $(CORPUS_VDB) # Build vector DBs for all corpuses
+
 run/fetch-models: .assure # Fetch GGUF models
 	-mkdir -p models
 	cd models && wget -nc -i ../models.txt
@@ -55,3 +60,6 @@ prompts/%.h: prompts/%.txt .assure
 
 maps/%.h: maps/%.txt .assure
 	xxd -i $< > $@
+
+corpus/%.vdb: corpus/%.txt build/context
+	./context -i $< -o $@

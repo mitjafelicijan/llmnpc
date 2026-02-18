@@ -3,8 +3,6 @@
 
 #include "llama.h"
 
-#include <errno.h>
-
 #define VDB_MAX_DOCS    1000
 #define VDB_EMBED_SIZE  768
 #define VDB_MAX_TEXT    1024
