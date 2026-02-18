@@ -1,8 +1,7 @@
 # llmnpc
 
-Command-line LLM inference and simple context retrieval powered by
-[llama.cpp](https://github.com/ggerganov/llama.cpp) to test viability of using
-LLM's to drive NPC behaviour.
+Command-line tooling for NPC-focused LLM experiments with lightweight context
+retrieval, powered by [llama.cpp](https://github.com/ggerganov/llama.cpp).
 
 ## Building
 
@@ -26,8 +25,8 @@ LLM's to drive NPC behaviour.
 
 3. Build binaries:
    ```bash
-   make build/prompt
    make build/context
+   make build/npc
    ```
 
 ## Usage
@@ -42,14 +41,14 @@ produces a binary vector database file.
 ./context -m flan-t5-small -i context.txt -o context.vdb
 ```
 
-### Run a prompt with retrieved context
+### Run an NPC query with retrieved context
 
-`prompt` reads the context text file, embeds the query, selects the top 3
-matching lines by cosine similarity, and builds a prompt from those lines.
+`npc` loads a vector database, embeds the prompt, selects the top 3 matching
+lines by cosine similarity, and runs the NPC system prompt against that context.
 
 ```bash
-./prompt -p "What is machine learning?" -c context.txt
-./prompt -m flan-t5-small -p "What is machine learning?" -c context.txt
+./npc -m flan-t5-small -p "Who is Gandalf?" -c context.vdb
+./npc -m flan-t5-small -p "Who is Frodo?" -c context.vdb
 ```
 
 ### context options
@@ -63,13 +62,14 @@ matching lines by cosine similarity, and builds a prompt from those lines.
 | `-v, --verbose` | Enable llama.cpp logging |
 | `-h, --help` | Show help message |
 
-### prompt options
+### npc options
 
 | Flag | Description |
 |------|-------------|
-| `-m, --model` | Model to use (default: first model in config) |
+| `-m, --model` | Model to use (required) |
 | `-p, --prompt` | Prompt text (required) |
-| `-c, --context` | Context text file (required) |
+| `-c, --context` | Context vector database file (.vdb) (required) |
+| `-l, --list` | List available models |
 | `-v, --verbose` | Enable llama.cpp logging |
 | `-h, --help` | Show help message |
 
