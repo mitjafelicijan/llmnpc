@@ -62,4 +62,4 @@ maps/%.h: maps/%.txt .assure
 	xxd -i $< > $@
 
 corpus/%.vdb: corpus/%.txt build/context
-	./context -i $< -o $@
+	./context -m qwen3 -i $< -o $@

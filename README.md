@@ -14,6 +14,26 @@ Goals of the experiment:
 - Test existing small and tiny LLMs and provide some useful results on how they
   behave.
 
+## Getting started
+
+1. Build dependencies and binaries:
+   ```bash
+   make build/llama.cpp
+   make run/fetch-models
+   make build/context
+   make build/game
+   ```
+
+2. Build a vector context database:
+   ```bash
+   build/corpus
+   ```
+
+3. Run the game:
+   ```bash
+   ./game -m phi-4-mini-instruct -e qwen3
+   ```
+
 ## Building
 
 ### Prerequisites
@@ -52,7 +72,7 @@ embedding model (for example, `qwen3`) even if you generate answers with a
 different model.
 
 ```bash
-./context -m qwen3 -i corpus/lotr.txt -o corpus/lotr.vdb
+./context -m qwen3 -i corpus/map1_keldor.txt -o corpus/map1_keldor.vdb
 ```
 
 ### Run an NPC query with retrieved context
@@ -62,8 +82,8 @@ lines by cosine similarity, and runs the NPC system prompt against that context.
 You can pass a separate embedding model with `-e`/`--embed-model`.
 
 ```bash
-./npc -m phi-4-mini-instruct -e qwen3 -p "Who is Gandalf?" -c corpus/lotr.vdb
-./npc -m qwen3 -e qwen3 -p "Who is Frodo?" -c corpus/lotr.vdb
+./npc -m phi-4-mini-instruct -e qwen3 -p "Who is Keldor?" -c corpus/map1_keldor.vdb
+./npc -m qwen3 -e qwen3 -p "What does Keldor believe about the marsh lights?" -c corpus/map1_keldor.vdb
 ```
 
 ### Run the game
