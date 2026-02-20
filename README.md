@@ -1,5 +1,14 @@
 An experiment using tiny LLMs as NPCs that could be embedded into the game.
 
+Embed models into the game, build a simple vector database from text, embed 
+prompts, retrieve top‑k by cosine similarity, and feed context into tiny 
+CPU LLMs for NPC interactions.
+
+**No external API calls.** Everything is local, directly using GGUF models 
+and [llama.cpp](https://github.com/ggml-org/llama.cpp) for inference.
+
+https://github.com/user-attachments/assets/863b75eb-0da7-4235-8112-f00bc82d81f6
+
 > [!NOTE]
 > This project is just for fun, to see how LLMs would fare as NPCs. Because of
 > the non-deterministic nature of LLMs, the results vary and are often quite
