@@ -115,7 +115,10 @@ int main(int argc, char **argv) {
 		cfg = &models[0];
 	}
 
-	struct llama_model *model = llama_model_load_from_file(cfg->filepath, llama_model_default_params());
+	struct llama_model_params model_params = llama_model_default_params();
+	model_params.n_gpu_layers = cfg->n_gpu_layers;
+	model_params.use_mmap = cfg->use_mmap;
+	struct llama_model *model = llama_model_load_from_file(cfg->filepath, model_params);
 	if (model == NULL) {
 		log_message(stderr, LOG_ERROR, "Unable to load embedding model");
 		llama_backend_free();
@@ -123,6 +126,8 @@ int main(int argc, char **argv) {
 	}
 
 	struct llama_context_params cparams = llama_context_default_params();
+	cparams.n_ctx = cfg->n_ctx;
+	cparams.n_batch = cfg->n_batch;
 	cparams.embeddings = true;
 
 	struct llama_context *embed_ctx = llama_init_from_model(model, cparams);
